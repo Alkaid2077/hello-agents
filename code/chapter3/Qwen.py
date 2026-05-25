@@ -41,6 +41,8 @@ print(model_inputs)
 # max_new_tokens 控制了模型最多能生成多少个新的Token
 generated_ids = model.generate(
     model_inputs.input_ids,
+    attention_mask=model_inputs.attention_mask,  # 显式传入掩码
+    pad_token_id=tokenizer.eos_token_id,         # 明确告诉模型 pad_token 是什么
     max_new_tokens=512
 )
 
