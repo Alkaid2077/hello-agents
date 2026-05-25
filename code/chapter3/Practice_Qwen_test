@@ -1,0 +1,55 @@
+import ollama, json, time
+
+MODEL = "qwen2.5:7b"
+TEST_SENTENCE = "2024年6月，苹果公司CEO蒂姆·库克在加州库比蒂诺发布了新款iPad Pro。"
+
+def ask(prompt, temp=0.1, top_p=0.9):
+    resp = ollama.chat(model=MODEL, messages=[{"role":"user","content":prompt}],
+                       options={"temperature":temp,"top_p":top_p,"top_k":50})
+    return resp["message"]["content"].strip()
+
+# ---------- 1. 采样参数对比 ----------
+print("="*50, "\n1. 采样参数对比")
+for temp in [0.1, 0.7, 1.5]:
+    print(f"\ntemperature={temp}:", ask("请用一句话解释什么是大语言模型。", temp=temp))
+
+# ---------- 2. 信息抽取对比 ----------
+def extract(prompt, temp=0.1):
+    raw = ask(prompt, temp)
+    try:
+        # 提取最后的 JSON 块
+        start, end = raw.rfind("{"), raw.rfind("}")+1
+        return json.loads(raw[start:end]) if start!=-1 and end!=0 else {"raw":raw}
+    except:
+        return {"raw":raw}
+
+print("\n"+"="*50, "\n2. 信息抽取策略对比")
+print("测试句子:", TEST_SENTENCE, "\n")
+
+# Zero-shot
+t0=time.time()
+res_zero = extract(f"""从以下文本提取人名、组织、地点，以JSON输出，键为"person","organization","location"。
+文本：{TEST_SENTENCE}""")
+print(f"Zero-shot (耗时{time.time()-t0:.1f}s):", json.dumps(res_zero, ensure_ascii=False, indent=2))
+
+# Few-shot
+t0=time.time()
+res_few = extract(f"""参考示例：
+例1：文本：比尔·盖茨在微软总部西雅图发表了演讲。
+输出：{{"person":["比尔·盖茨"],"organization":["微软"],"location":["西雅图"]}}
+例2：文本：谷歌CEO桑达尔·皮查伊在纽约出席了会议。
+输出：{{"person":["桑达尔·皮查伊"],"organization":["谷歌"],"location":["纽约"]}}
+现在提取：
+文本：{TEST_SENTENCE}""")
+print(f"\nFew-shot (耗时{time.time()-t0:.1f}s):", json.dumps(res_few, ensure_ascii=False, indent=2))
+
+# Chain-of-Thought
+t0=time.time()
+res_cot = extract(f"""逐步提取人名、组织、地点，最后输出JSON。
+1. 列出所有人名
+2. 列出所有组织
+3. 列出所有地点
+4. 汇总为JSON：{{"person":[],"organization":[],"location":[]}}
+文本：{TEST_SENTENCE}
+分析：""")
+print(f"\nChain-of-Thought (耗时{time.time()-t0:.1f}s):", json.dumps(res_cot, ensure_ascii=False, indent=2))
