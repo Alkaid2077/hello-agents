@@ -1,12 +1,10 @@
-# 增加HF_ENDPOINT，避免Connection aborted. 
 import os
-os.environ["HF_ENDPOINT"] = "https://hf-mirror.com"
-
 import torch
+from modelscope import snapshot_download
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
-# 指定模型ID
-model_id = "Qwen/Qwen1.5-0.5B-Chat"
+# 从 ModelScope 下载模型，返回本地路径
+model_id = snapshot_download("qwen/Qwen1.5-0.5B-Chat")
 
 # 设置设备，优先使用GPU
 device = "cuda" if torch.cuda.is_available() else "cpu"
