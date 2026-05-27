@@ -2,6 +2,14 @@ from dotenv import load_dotenv
 # 加载 .env 文件中的环境变量
 load_dotenv()
 
+# 测试是否能够成功访问Google（如果在中国大陆，可能会失败）
+# import requests
+# try:
+#     r = requests.get("https://www.google.com", timeout=10)
+#     print("直接访问Google成功", r.status_code)
+# except Exception as e:
+#     print("直接访问Google失败", e)
+
 import os
 from serpapi import SerpApiClient
 from typing import Dict, Any
@@ -14,6 +22,7 @@ def search(query: str) -> str:
     print(f"🔍 正在执行 [SerpApi] 网页搜索: {query}")
     try:
         api_key = os.getenv("SERPAPI_API_KEY")
+        # print(f"读取到的密钥前8位: {api_key[:8] if api_key else 'None'}...")
         if not api_key:
             return "错误：SERPAPI_API_KEY 未在 .env 文件中配置。"
 
@@ -27,6 +36,10 @@ def search(query: str) -> str:
         
         client = SerpApiClient(params)
         results = client.get_dict()
+        # #临时调试：打印完整原始响应
+        # print("===== SerpApi 原始返回 =====")
+        # print(results)
+        # print("============================")
         
         # 智能解析：优先寻找最直接的答案
         if "answer_box_list" in results:
@@ -81,7 +94,6 @@ class ToolExecutor:
             f"- {name}: {info['description']}" 
             for name, info in self.tools.items()
         ])
-
 
 # --- 工具初始化与使用示例 ---
 if __name__ == '__main__':
